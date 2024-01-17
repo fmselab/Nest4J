@@ -1,113 +1,92 @@
 # Nest4J
 
-Nest4J is a Nest algorithm tool written in Java which designed to run in server-side.  And it is based by [SVGNest](https://github.com/Jack000/SVGnest).
+Nest4J is a nesting algorithm library. It's a Java adaptation of [SVGNest](https://github.com/Jack000/SVGnest).
 
-Also, Nest4J is my Undergraduate Graduation Project which let me know the charm of Computational geometry.
+# What is "nesting"?
 
-# What is Nest Problem?
-
-Given a square piece of material and some letters to be laser-cut:
-
-We want to pack all the letters into the square, using as little material as possible. If a single square is not enough, we also want to minimize the number of squares used.
+Imagine you've got a rectangular sheet and a bunch of letter-shaped pieces — how do you fit all those letters onto the sheet without overlapping? By finding just the right order and position for each letter, along with the perfect angle to rotate them, we get the job done. This kind of puzzle — figuring out how the letters and the sheet fit together and at what angles — is what we call a nesting problem.
 
 In the CNC world this is called "nesting", and software that does this is typically targeted at industrial customers and very expensive.
 
 ![example](./png/nest.png)
-
-for more detail , please go to [SVGNest](https://github.com/Jack000/SVGnest)
 
 ## Performance
 I used SVGNest Demo to test Nest4J and here is my result.
 
 ![sample](./png/sample.png)
 
-## How to use?
+## Usage
 
+This algorithm, based on SVGNest, has been tweaked to run in Java so it can handle backend calculations on a server.
 
-Nest4J is based by SVGNest and ported it into Java so that it can runs in server-side.
+### Representing polygons
 
-It is esay to use Nest4J by following steps.
+Nest4J uses a standard way of representing a polygon by a set of points. Here's how you make a rectangular polygon shape.
 
-## Env
-
-Nest4J needs JDK1.8 version , and the maven dependency of [Clipper-java](https://github.com/lightbringer/clipper-java). You have to download [Clipper-java](https://github.com/lightbringer/clipper-java) and install it into your local maven repository.
-
-## Express an Polygon
-
-Nest4J use a common way to express an polygon by a collection of Points. Here is an example to show you .
-
-
-**It is important that Nest4J express polygons in an 2d coordinate system , so you have to ensure that each polygon won't be covered by another.**
+**Keep in mind, Nest4J polygons are based on a 2D Cartesian coordinate system, which means you need to ensure that the polygons you input won't overlap, or it'll throw an error.**
 
 ```java
-        NestPath bin = new NestPath();
-        double binWidth = 511.822;
-        double binHeight = 339.235;
-        bin.add(0, 0);
-        bin.add(binWidth, 0);
-        bin.add(binWidth, binHeight);
-        bin.add(0, binHeight);
-
+NestPath bin = new NestPath();
+double binWidth = 511.822;
+double binHeight = 339.235;
+bin.add(0, 0);
+bin.add(binWidth, 0);
+bin.add(binWidth, binHeight);
+bin.add(0, binHeight);
 ```
 
 
-## Construct an material list.
+### Making sheet materials
 
-It is easy to construct a material list when we know how to express a ploygon. it's just a collection of polygons.
+Once we know how to make a polygon, making a collection of bins is basically making a collection of polygons.
 
 ```java
-        List<NestPath> list = new ArrayList<NestPath>();
-        list.add(polygon1);
-        list.add(polygon2);
-        list.add(polygon3);
-
+List<NestPath> list = new ArrayList<NestPath>();
+list.add(polygon1);
+list.add(polygon2);
+list.add(polygon3);
 ```
 
-### Extended Attributes of Polygon
+### Extended options for polygons
 
-When one polygon is constructed , its default Rotation attr is 0 , which means we will fix it during our Nest Program. We can set it as 4 and this polygon may rotate in 90°,180°,270°. If we set Rotation attr as N, this polygon may these rotation angles `(360/N) *k , k= 0,1,2,3,...N`
+By default, a polygon has a rotation property of 0, which means it's locked in place and can't rotate during nesting. To let it rotate, set its rotation property to 4, which allows it to rotate by 90°, 180°, and 270° during nesting. In general, if you set a polygon's rotation to N, you're giving it N options for rotation: (360/N)*k , k= 0,1,2,3,...N.
 
-Meanwhile you can use `bid` to help you identify the polygons. It is useful when we get nest result.
+You can also set a bid (bin id) property for each sheet, which helps match them up before and after nesting.
 
 ``` java
-
-      polygon.bid = id;
-      polygon.setRotation(4);
-
+polygon.bid = id;
+polygon.setRotation(4);
 ``` 
 
+### Polygons with holes
 
-### Hollow Polygon
-
-For those hollow polgyons, Nest4J provides a simple way to express by 2d coordinate system. If one polygon is inside in another by their coordinates, the Nest4J will detact it automaticly.
+Representing a polygon with holes in Nest4J is also very simple; as long as the shape of the holes is described using a two-dimensional Cartesian coordinate system, they can be placed within the interior of the polygon. Nest4J will automatically detect the presence of holes in the polygon.
 
 ```java
-
-        NestPath outer = new NestPath();
-        outer.add(600, 0);
-        outer.add(600, 200);
-        outer.add(800, 200);
-        outer.add(800, 0);
-        outer.setRotation(0);
-        outer.bid = 1;
-        NestPath inner = new NestPath();
-        inner.add(650, 50);
-        inner.add(650, 150);
-        inner.add(750, 150);
-        inner.add(750, 50);
-        inner.bid = 2;
-
+NestPath outer = new NestPath();
+outer.add(600, 0);
+outer.add(600, 200);
+outer.add(800, 200);
+outer.add(800, 0);
+outer.setRotation(0);
+outer.bid = 1;
+NestPath inner = new NestPath();
+inner.add(650, 50);
+inner.add(650, 150);
+inner.add(750, 150);
+inner.add(750, 50);
+inner.bid = 2;
 ```
 
 
 ### Configuration 
 
-Before we start to nest , you can set configuration.
+You can customize a bunch of settings in Nest4J prior to starting the nesting calculation.
 
 ```java
-        Config config = new Config();
-        config.SPACING = 0;
-        config.POPULATION_SIZE = 5;
+Config config = new Config();
+config.SPACING = 0;
+config.POPULATION_SIZE = 5;
 ```
 
 
@@ -140,23 +119,19 @@ Before we start to nest , you can set configuration.
 </table>
 
 
-## start to nest
+## Starting the calculation
 
-
-When we configure the bin, the material list and the configuration, we can start to nest.
+Once the base sheet, polygon collection, and necessary parameters have been set, along with the number of iterations we want, we're ready to calculate.
 
 ```java
-
-     Nest nest = new Nest(bin, polygons, config, 2);
-     List<List<Placement>> appliedPlacement = nest.startNest();
-
+Nest nest = new Nest(bin, polygons, config, 2);
+List<List<Placement>> appliedPlacement = nest.startNest();
 ```
 
 
 ### Placement
 
-
-Placement is our unit of final result , which represents a polygon with a specific `bid` placed into a rotation angel and relative coordiates to its bin of top left corner.
+Placement represents a unit of our final result, indicating the offset and rotation angle of a polygon (identified by bid) relative to the top-left corner of its belonging bin.
 
 ```java
 public class Placement {
@@ -174,21 +149,19 @@ public class Placement {
     public Placement() {
     }
 }
-
 ```
 
 ## Visualization 
 
-I use SVG to help us see the result. You can find it in `NestTest`.
+To output results, I've provided a method based on SVG for visualization. You can take a look in the NestTest.
 
 ```java
-        List<String> strings = SvgUtil.svgGenerator(polygons, appliedPlacement, binWidth, binHeight);
-        saveSvgFile(strings);
-
+List<String> strings = SvgUtil.svgGenerator(polygons, appliedPlacement, binWidth, binHeight);
+saveSvgFile(strings);
 ```
 
 
-## Referenced Paper
+## Reference Papers
 
 - [López-Camacho *et al.* 2013](http://www.cs.stir.ac.uk/~goc/papers/EffectiveHueristic2DAOR2013.pdf)
 - [Kendall 2000](http://www.graham-kendall.com/papers/k2001.pdf)

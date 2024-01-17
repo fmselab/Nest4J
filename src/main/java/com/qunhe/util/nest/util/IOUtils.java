@@ -1,11 +1,13 @@
 package com.qunhe.util.nest.util;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.Writer;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,21 +24,30 @@ import com.qunhe.util.nest.data.Placement;
 import com.qunhe.util.nest.data.Segment;
 
 public class IOUtils {
-    public static void log(Object... o){
-        if(o != null) {
-            for (Object element : o) {
-                System.out.println(element);
-            }
-        }
-    }
+	
+	public static void log(Object... o) {
+		if (o != null) {
+			for (Object element : o) {
+				if (element instanceof Exception) {
+					((Exception) element).printStackTrace();
+				} else {
+					System.out.println(element);
+				}
+			}
+		}
+	}
 
-    public static void debug(Object... o){
-        if(o != null && Config.IS_DEBUG) {
-            for (Object element : o) {
-                System.out.println(element);
-            }
-        }
-    }
+	public static void debug(Object... o) {
+		if (o != null && Config.IS_DEBUG) {
+			for (Object element : o) {
+				if (element instanceof Exception) {
+					((Exception) element).printStackTrace();
+				} else {
+					System.out.println(element);
+				}
+			}
+		}
+	}
 
     public static List<NestPath> readFromContestFile(String filepath) throws Exception{
         List<NestPath> nestPaths = new ArrayList<>();
@@ -78,17 +89,25 @@ public class IOUtils {
         return nestPaths;
     }
 
-    public static void saveNfpCache(Map<String,List<NestPath>> nfpCache, String filename){
-        try {
-            Gson g = new Gson();
-            String res = g.toJson(nfpCache);
-            FileWriter fw = new FileWriter(filename);
-            fw.write(res);
-            fw.close();
-        }catch (Exception e){
-            log(e);
-        }
-    }
+	public static synchronized void saveNfpCache(Map<String, List<NestPath>> nfpCache, String filename) {
+		try {
+			Gson g = new Gson();
+			String res = g.toJson(nfpCache);
+			Path p = Paths.get(filename);
+			if (Files.notExists(p, LinkOption.NOFOLLOW_LINKS)) {
+				Path directory = p.getParent();
+				if (Files.notExists(directory, LinkOption.NOFOLLOW_LINKS)) {
+					Files.createDirectory(p.getParent(), new FileAttribute[0]);
+				}
+				Files.createFile(p, new FileAttribute[0]).toAbsolutePath();
+			}
+			FileWriter fw = new FileWriter(filename);
+			fw.write(res);
+			fw.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
     public static Map<String,List<NestPath>> loadNfpCache(String filename) {
         try {
@@ -97,7 +116,7 @@ public class IOUtils {
             Map<String, List<NestPath>> nfpCache = g.fromJson(json, new HashMap<String, List<NestPath>>().getClass());
             return nfpCache;
         } catch (Exception e) {
-            log(e);
+        	e.printStackTrace();
         }
         return null;
     }
@@ -123,11 +142,16 @@ public class IOUtils {
 
     public static void saveSvgFile(List<String> strings, String file) throws Exception {
         debug(file);
-        File f = new File(file);
-        if (!f.exists()) {
-            f.createNewFile();
-        }
-        Writer writer = new FileWriter(f, false);
+        Path p = Paths.get(file);
+        
+        if (Files.notExists(p, LinkOption.NOFOLLOW_LINKS)) {
+        	Path directory = p.getParent();
+        	if (Files.notExists(directory, LinkOption.NOFOLLOW_LINKS)) {
+        		Files.createDirectory(p.getParent(), new FileAttribute[0]);        		
+        	}
+			Files.createFile(p, new FileAttribute[0]).toAbsolutePath();
+		}
+        Writer writer = new FileWriter(file, false);
         writer.write("<?xml version=\"1.0\" standalone=\"no\"?>\n" +
             "\n" +
             "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \n" +
